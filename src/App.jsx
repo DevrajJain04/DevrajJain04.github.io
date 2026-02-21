@@ -1,7 +1,8 @@
-import React, { Suspense, useState, useCallback, useEffect } from 'react'
-import { Canvas } from '@react-three/fiber'
+import React, { Suspense, useState, useCallback, useEffect, useRef } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { AnimatePresence, motion } from 'framer-motion'
+import * as THREE from 'three'
 import StarField from './components/StarField'
 import HUD from './components/HUD'
 import SectionModal from './components/SectionModal'
@@ -22,10 +23,78 @@ const directModals = {
   contact: ContactContent,
 }
 
+const CameraFocus = ({ expandedId, controlsRef }) => {
+  const { camera } = useThree()
+  const transitionRef = useRef({
+    progress: 1,
+    settled: true,
+    fromPos: new THREE.Vector3(0, 0, 12),
+    toPos: new THREE.Vector3(0, 0, 12),
+    fromTarget: new THREE.Vector3(0, 0, 0),
+    toTarget: new THREE.Vector3(0, 0, 0),
+  })
+
+  useEffect(() => {
+    const controls = controlsRef.current
+    if (!controls) return
+
+    const transition = transitionRef.current
+    transition.settled = false
+
+    if (expandedId) {
+      // Normalize from a known baseline so prior zoom/pan does not skew focus alignment.
+      camera.position.set(0, 0, 12)
+      controls.target.set(0, 0, 0)
+      controls.update()
+    }
+
+    transition.progress = 0
+    transition.fromPos.copy(camera.position)
+    transition.fromTarget.copy(controls.target)
+
+    if (expandedId) {
+      const parent = constellationNodes.find((n) => n.id === expandedId)
+      if (parent) {
+        transition.toTarget.set(parent.position[0], parent.position[1], parent.position[2])
+        transition.toPos.set(parent.position[0], parent.position[1] + 0.25, parent.position[2] + 6.4)
+      }
+    } else {
+      transition.toTarget.set(0, 0, 0)
+      transition.toPos.set(0, 0, 12)
+    }
+  }, [expandedId, camera, controlsRef])
+
+  useFrame((_, delta) => {
+    const controls = controlsRef.current
+    if (!controls) return
+
+    const transition = transitionRef.current
+    if (transition.progress >= 1) {
+      if (!transition.settled) {
+        camera.position.copy(transition.toPos)
+        controls.target.copy(transition.toTarget)
+        controls.update()
+        transition.settled = true
+      }
+      return
+    }
+
+    transition.progress = Math.min(1, transition.progress + delta * 2.2)
+    const eased = 1 - Math.pow(1 - transition.progress, 3)
+
+    camera.position.lerpVectors(transition.fromPos, transition.toPos, eased)
+    controls.target.lerpVectors(transition.fromTarget, transition.toTarget, eased)
+    controls.update()
+  })
+
+  return null
+}
+
 const App = () => {
   const [loading, setLoading] = useState(true)
   const [introVisible, setIntroVisible] = useState(true)
   const [introFading, setIntroFading] = useState(false)
+  const controlsRef = useRef(null)
 
   // Main star hover
   const [hoveredId, setHoveredId] = useState(null)
@@ -124,6 +193,8 @@ const App = () => {
           <pointLight position={[15, 10, 10]} intensity={0.3} color="#ffffff" />
           <pointLight position={[-10, -8, 5]} intensity={0.15} color="#64ffda" />
 
+          <CameraFocus expandedId={expandedId} controlsRef={controlsRef} />
+
           <StarField
             hoveredId={hoveredId}
             onStarClick={handleStarClick}
@@ -134,13 +205,14 @@ const App = () => {
           />
 
           <OrbitControls
+            ref={controlsRef}
             enablePan={true}
             enableZoom={true}
             enableRotate={true}
-            minDistance={5}
-            maxDistance={18}
+            minDistance={expandedId ? 3.8 : 5}
+            maxDistance={expandedId ? 12 : 18}
             autoRotate={false}
-            zoomSpeed={0.6}
+            zoomSpeed={expandedId ? 0.72 : 0.6}
             rotateSpeed={0.5}
             enableDamping={true}
             dampingFactor={0.05}

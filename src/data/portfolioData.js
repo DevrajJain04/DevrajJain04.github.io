@@ -27,7 +27,7 @@ export const constellationNodes = [
   {
     id: 'projects',
     label: 'Projects',
-    description: '4 projects — click to explore each',
+    description: '6 projects — click to explore each',
     position: [4.5, 1, -1.5],
     color: '#4ecdc4',
     emissive: '#2dbdb4',
@@ -110,6 +110,24 @@ export const childNodes = {
       glowSize: 0.75,
       offset: [-1.0, -0.8, -0.6],
     },
+    {
+      id: 'proj-flowstate',
+      label: 'FlowState',
+      color: '#7dd3fc',
+      emissive: '#38bdf8',
+      size: 0.34,
+      glowSize: 0.75,
+      offset: [1.2, -1.0, 0.9],
+    },
+    {
+      id: 'proj-reqres',
+      label: 'ReqRes',
+      color: '#34d399',
+      emissive: '#10b981',
+      size: 0.34,
+      glowSize: 0.75,
+      offset: [-0.1, 2.2, -0.8],
+    },
   ],
   experience: [
     {
@@ -149,8 +167,12 @@ export const childLines = {
     ['_parent', 'proj-safar'],
     ['_parent', 'proj-likhai'],
     ['_parent', 'proj-progress'],
+    ['_parent', 'proj-flowstate'],
+    ['_parent', 'proj-reqres'],
     ['proj-cricket', 'proj-safar'],
-    ['proj-safar', 'proj-likhai'],
+    ['proj-safar', 'proj-reqres'],
+    ['proj-reqres', 'proj-flowstate'],
+    ['proj-flowstate', 'proj-likhai'],
     ['proj-likhai', 'proj-progress'],
     ['proj-progress', 'proj-cricket'],
   ],
@@ -253,6 +275,76 @@ export const projects = {
     githubUrl: "https://github.com/DevrajJain04",
     liveUrl: "https://devrajsprogress.vercel.app",
     color: "#bb86fc",
+  },
+  'proj-flowstate': {
+    name: "AI Flowchart Generator (Groq + React Flow)",
+    description: "AI-powered flowchart generator that converts natural language into interactive diagrams. It is designed for explainability-heavy use cases across presentations, technical papers, education, and business process mapping.",
+    technologies: [
+      "React",
+      "Vite",
+      "React Flow (@xyflow/react)",
+      "Dagre",
+      "Node.js",
+      "Express",
+      "Groq API (groq-sdk)",
+      "JSON/PNG/JPG/SVG Export"
+    ],
+    highlights: [
+      "Natural language to diagram generation using Groq LLMs.",
+      "Follow-up refinement prompts to iteratively update an existing flowchart.",
+      "AI-selected color palettes tuned to prompt/domain context.",
+      "Interactive node/edge editing with pan, zoom, minimap, and controls.",
+      "Manual palette customization for canvas, edges, accent, and node types.",
+      "Distinct node shapes per type (start, process, decision, data, subprocess, actor, document, end).",
+      "Auto layout switching (vertical/horizontal/compact).",
+      "Dark mode and light mode with palette-aware rendering.",
+      "Explainability panel with summary, rationale, and prompt improvement tips.",
+      "Presentation/technical-paper friendly export to PNG, JPG, SVG, and JSON.",
+      "JSON import for iterative refinement and collaboration."
+    ],
+    githubUrl: "https://github.com/DevrajJain04/FlowState",
+    liveUrl: "https://flow-state-chart-ai.vercel.app/",
+    color: "#7dd3fc",
+  },
+  'proj-reqres': {
+    name: "ReqRes",
+    description: "ReqRes is a YAML-driven API testing CLI for backend teams and AI coding agents. Run one command to verify new changes and catch regressions fast.",
+    technologies: [
+      "Go",
+      "YAML",
+      "CLI",
+      "API Testing",
+      "OpenAPI",
+      "JSON Reports",
+      "HTML Reports"
+    ],
+    quickstart: [
+      "go build -o reqres .",
+      "./reqres validate tests.yaml",
+      "./reqres run tests.yaml --tags smoke",
+      "./reqres run tests.yaml --report-json reports/result.json --report-html reports/result.html"
+    ],
+    commonCommands: [
+      "./reqres run tests.yaml",
+      "./reqres run tests.yaml --env staging --parallel 8",
+      "./reqres run users.yaml orders.yaml --parallel",
+      "./reqres run tests.yaml --detect-flaky 3",
+      "./reqres run tests.yaml --update-snapshots",
+      "./reqres mock tests.yaml --port 8080",
+      "./reqres generate openapi.json -o generated-tests.yaml",
+      "./reqres gha-init"
+    ],
+    highlights: [
+      "Shared defaults (`defaults`) remove repeated headers/auth per test.",
+      "Variables (`vars` + `${name}`) remove copy-paste values.",
+      "Capture chaining (`capture` + `after`) reuses dynamic IDs across tests.",
+      "Tags (`smoke`, `regression`) avoid re-running everything every time.",
+      "OpenAPI generation creates a starter suite quickly for humans and AI agents."
+    ],
+    docsReference: "HOW_TO_USE.md",
+    githubUrl: "https://github.com/DevrajJain04/ApiTestingCLI",
+    liveUrl: null,
+    color: "#34d399",
   },
 };
 

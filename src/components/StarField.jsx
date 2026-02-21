@@ -1,6 +1,6 @@
-import React, { useRef, useMemo, useCallback } from 'react'
+import React, { useRef, useMemo, useCallback, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Stars } from '@react-three/drei'
+import { Stars, Billboard, Text } from '@react-three/drei'
 import * as THREE from 'three'
 import HeavenlyBody from './HeavenlyBody'
 import {
@@ -19,6 +19,26 @@ const StarField = ({
     const linesRef = useRef()
     const groupRef = useRef()
     const childLinesRef = useRef()
+
+    const getChildSpread = useCallback((parentId) => (
+        parentId === 'projects' ? 1.45 : 1.2
+    ), [])
+
+    const getChildWorldPosition = useCallback((parent, child, parentId) => {
+        const spread = getChildSpread(parentId)
+        return [
+            parent.position[0] + child.offset[0] * spread,
+            parent.position[1] + child.offset[1] * spread,
+            parent.position[2] + child.offset[2] * spread,
+        ]
+    }, [getChildSpread])
+
+    useEffect(() => {
+        if (expandedId && groupRef.current) {
+            // Keep a stable frame of reference for camera focus when a sub-constellation opens.
+            groupRef.current.rotation.set(0, 0, 0)
+        }
+    }, [expandedId])
 
     // Main constellation lines
     const linePositions = useMemo(() => {
@@ -43,27 +63,32 @@ const StarField = ({
             const aPos = aId === '_parent' ? parent.position
                 : (() => {
                     const c = children.find(ch => ch.id === aId)
-                    return c ? [parent.position[0] + c.offset[0], parent.position[1] + c.offset[1], parent.position[2] + c.offset[2]] : null
+                    return c ? getChildWorldPosition(parent, c, expandedId) : null
                 })()
             const bPos = bId === '_parent' ? parent.position
                 : (() => {
                     const c = children.find(ch => ch.id === bId)
-                    return c ? [parent.position[0] + c.offset[0], parent.position[1] + c.offset[1], parent.position[2] + c.offset[2]] : null
+                    return c ? getChildWorldPosition(parent, c, expandedId) : null
                 })()
             if (aPos && bPos) { pts.push(...aPos, ...bPos) }
         }
         return new Float32Array(pts)
-    }, [expandedId])
+    }, [expandedId, getChildWorldPosition])
 
     useFrame((state) => {
         if (groupRef.current) {
-            if (!hoveredId) {
+            if (!hoveredId && !expandedId) {
                 groupRef.current.rotation.y += 0.0008
             }
-            const tilt = Math.sin(state.clock.elapsedTime * 0.12) * 0.06
+            const tilt = expandedId ? 0 : Math.sin(state.clock.elapsedTime * 0.12) * 0.06
             groupRef.current.rotation.x = THREE.MathUtils.lerp(
                 groupRef.current.rotation.x, tilt, 0.02
             )
+            if (expandedId) {
+                groupRef.current.rotation.y = THREE.MathUtils.lerp(
+                    groupRef.current.rotation.y, 0, 0.1
+                )
+            }
         }
 
         if (linesRef.current) {
@@ -91,23 +116,17 @@ const StarField = ({
 
     const handleChildPointerOver = useCallback((child, parentId, e) => {
         const parent = constellationNodes.find(n => n.id === parentId)
-        const worldPos = [
-            parent.position[0] + child.offset[0],
-            parent.position[1] + child.offset[1],
-            parent.position[2] + child.offset[2],
-        ]
+        if (!parent) return
+        const worldPos = getChildWorldPosition(parent, child, parentId)
         onChildHover(child.id, { ...child, position: worldPos }, { x: e.clientX, y: e.clientY })
-    }, [onChildHover])
+    }, [getChildWorldPosition, onChildHover])
 
     const handleChildPointerMove = useCallback((child, parentId, e) => {
         const parent = constellationNodes.find(n => n.id === parentId)
-        const worldPos = [
-            parent.position[0] + child.offset[0],
-            parent.position[1] + child.offset[1],
-            parent.position[2] + child.offset[2],
-        ]
+        if (!parent) return
+        const worldPos = getChildWorldPosition(parent, child, parentId)
         onChildHover(child.id, { ...child, position: worldPos }, { x: e.clientX, y: e.clientY })
-    }, [onChildHover])
+    }, [getChildWorldPosition, onChildHover])
 
     const handleChildPointerOut = useCallback(() => {
         onChildHover(null, null, null)
@@ -135,6 +154,7 @@ const StarField = ({
                 {constellationNodes.map((node) => {
                     // Dim non-expanded parents when something is expanded
                     const isDimmed = expandedId && expandedId !== node.id
+                    const labelColor = isDimmed ? 'rgba(148,163,184,0.7)' : '#f8fafc'
                     return (
                         <group key={node.id} visible={true}>
                             <HeavenlyBody
@@ -150,6 +170,28 @@ const StarField = ({
                                 onPointerMove={(e) => !isDimmed && handlePointerMove(node, e)}
                                 onPointerOut={handlePointerOut}
                             />
+                            <Billboard
+                                position={[
+                                    node.position[0],
+                                    node.position[1] - (node.size * 2 + 0.55),
+                                    node.position[2],
+                                ]}
+                                raycast={() => null}
+                            >
+                                <Text
+                                    color={labelColor}
+                                    fontSize={0.26}
+                                    maxWidth={3.4}
+                                    textAlign="center"
+                                    anchorX="center"
+                                    anchorY="middle"
+                                    outlineWidth={0.022}
+                                    outlineColor="#020617"
+                                    raycast={() => null}
+                                >
+                                    {node.label}
+                                </Text>
+                            </Billboard>
                         </group>
                     )
                 })}
@@ -172,26 +214,47 @@ const StarField = ({
                 {/* Child heavenly bodies */}
                 {expandedId && childNodes[expandedId] && (() => {
                     const parent = constellationNodes.find(n => n.id === expandedId)
+                    if (!parent) return null
                     return childNodes[expandedId].map((child) => {
-                        const pos = [
-                            parent.position[0] + child.offset[0],
-                            parent.position[1] + child.offset[1],
-                            parent.position[2] + child.offset[2],
-                        ]
+                        const pos = getChildWorldPosition(parent, child, expandedId)
+                        const sizeBoost = expandedId === 'projects' ? 1.08 : 1
+                        const childSize = child.size * sizeBoost
+                        const childGlow = child.glowSize * sizeBoost
+                        const labelFontSize = child.label.length > 12 ? 0.19 : 0.22
                         return (
-                            <HeavenlyBody
-                                key={child.id}
-                                position={pos}
-                                color={child.color}
-                                emissive={child.emissive || child.color}
-                                size={child.size}
-                                glowSize={child.glowSize}
-                                isHovered={hoveredId === child.id}
-                                onClick={() => onChildClick(child.id)}
-                                onPointerOver={(e) => handleChildPointerOver(child, expandedId, e)}
-                                onPointerMove={(e) => handleChildPointerMove(child, expandedId, e)}
-                                onPointerOut={handleChildPointerOut}
-                            />
+                            <group key={child.id}>
+                                <HeavenlyBody
+                                    position={pos}
+                                    color={child.color}
+                                    emissive={child.emissive || child.color}
+                                    size={childSize}
+                                    glowSize={childGlow}
+                                    isHovered={hoveredId === child.id}
+                                    onClick={() => onChildClick(child.id)}
+                                    onPointerOver={(e) => handleChildPointerOver(child, expandedId, e)}
+                                    onPointerMove={(e) => handleChildPointerMove(child, expandedId, e)}
+                                    onPointerOut={handleChildPointerOut}
+                                />
+
+                                <Billboard
+                                    position={[pos[0], pos[1] - (childSize * 1.8 + 0.38), pos[2]]}
+                                    raycast={() => null}
+                                >
+                                    <Text
+                                        color={hoveredId === child.id ? '#ffffff' : '#e2e8f0'}
+                                        fontSize={labelFontSize}
+                                        maxWidth={3.1}
+                                        textAlign="center"
+                                        anchorX="center"
+                                        anchorY="middle"
+                                        outlineWidth={0.02}
+                                        outlineColor="#020617"
+                                        raycast={() => null}
+                                    >
+                                        {child.label}
+                                    </Text>
+                                </Billboard>
+                            </group>
                         )
                     })
                 })()}

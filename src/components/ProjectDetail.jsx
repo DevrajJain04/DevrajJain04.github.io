@@ -29,8 +29,116 @@ const ProjectDetail = ({ childId }) => {
                 ))}
             </motion.div>
 
+            {/* Quickstart commands (optional) */}
+            {project.quickstart?.length > 0 && (
+                <motion.div variants={fade} custom={2} style={{ marginBottom: '28px' }}>
+                    <h3 style={{
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: project.color,
+                        margin: '0 0 12px',
+                        fontFamily: "'Outfit', sans-serif",
+                    }}>
+                        Quickstart (60 seconds)
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {project.quickstart.map((command) => (
+                            <code key={command} style={{
+                                padding: '8px 10px',
+                                borderRadius: '10px',
+                                background: 'rgba(0,0,0,0.35)',
+                                border: `1px solid ${project.color}30`,
+                                color: 'rgba(255,255,255,0.88)',
+                                fontSize: '12px',
+                                lineHeight: 1.5,
+                                fontFamily: "'Consolas', 'Courier New', monospace",
+                                whiteSpace: 'pre-wrap',
+                            }}>
+                                {command}
+                            </code>
+                        ))}
+                    </div>
+                </motion.div>
+            )}
+
+            {/* Common commands (optional) */}
+            {project.commonCommands?.length > 0 && (
+                <motion.div variants={fade} custom={3} style={{ marginBottom: '28px' }}>
+                    <h3 style={{
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: project.color,
+                        margin: '0 0 12px',
+                        fontFamily: "'Outfit', sans-serif",
+                    }}>
+                        Common Commands
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {project.commonCommands.map((command) => (
+                            <code key={command} style={{
+                                padding: '8px 10px',
+                                borderRadius: '10px',
+                                background: 'rgba(0,0,0,0.35)',
+                                border: `1px solid ${project.color}30`,
+                                color: 'rgba(255,255,255,0.88)',
+                                fontSize: '12px',
+                                lineHeight: 1.5,
+                                fontFamily: "'Consolas', 'Courier New', monospace",
+                                whiteSpace: 'pre-wrap',
+                            }}>
+                                {command}
+                            </code>
+                        ))}
+                    </div>
+                </motion.div>
+            )}
+
+            {/* Feature highlights (optional) */}
+            {project.highlights?.length > 0 && (
+                <motion.div variants={fade} custom={4} style={{ marginBottom: '28px' }}>
+                    <h3 style={{
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: project.color,
+                        margin: '0 0 12px',
+                        fontFamily: "'Outfit', sans-serif",
+                    }}>
+                        Key Features
+                    </h3>
+                    <ul style={{
+                        margin: 0,
+                        paddingLeft: '18px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                    }}>
+                        {project.highlights.map((point) => (
+                            <li key={point} style={{
+                                color: 'rgba(255,255,255,0.72)',
+                                fontSize: '13px',
+                                lineHeight: 1.6,
+                            }}>
+                                {point}
+                            </li>
+                        ))}
+                    </ul>
+                </motion.div>
+            )}
+
+            {/* Documentation note (optional) */}
+            {project.docsReference && (
+                <motion.p variants={fade} custom={5} style={{
+                    color: 'rgba(255,255,255,0.68)',
+                    fontSize: '13px',
+                    lineHeight: 1.6,
+                    margin: '0 0 24px',
+                }}>
+                    Full Documentation: {project.docsReference}
+                </motion.p>
+            )}
+
             {/* Links */}
-            <motion.div variants={fade} custom={2} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <motion.div variants={fade} custom={6} style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                 {project.githubUrl && (
                     <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" style={{
                         display: 'inline-flex', alignItems: 'center', gap: '8px',
